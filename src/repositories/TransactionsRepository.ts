@@ -1,15 +1,12 @@
 import Transaction from '../models/Transaction';
 
 interface Balance {
-  transactions: Transaction[];
-  balance: object;
+  income: number;
+  outcome: number;
+  total: number;
 }
 
-let income: string;
-let outcome: number;
-let total: number;
-
-interface TransactionDTO {
+interface CreateTransactionDTO {
   title: string;
   value: number;
   type: 'income' | 'outcome';
@@ -27,47 +24,39 @@ class TransactionsRepository {
   }
 
   public getBalance(): Balance {
-    const { transactions } = this;
-    function getTotalIncome(total, item) {
-      return total + (item.type === 'income' ? item.value : null);
-    }
-    const totalIncome = this.transactions.reduce(getTotalIncome, 0);
+    const { income, outcome } = this.transactions.reduce(
+      (accumulator: Balance, transaction: Transaction) => {
+        switch (transaction.type) {
+          case 'income':
+            accumulator.income += transaction.value;
+            break;
+          case 'outcome':
+            accumulator.outcome += transaction.value;
+            break;
+          default:
+            break;
+        }
 
-    function getTotalOutcome(total, item) {
-      return total + (item.type === 'outcome' ? item.value : null);
-    }
-    const totalOutcome = this.transactions.reduce(getTotalOutcome, 0);
-
-    const totalTotal = totalIncome - totalOutcome;
-
-    const teste = {
-      transactions,
-      balance: {
-        income: totalIncome,
-        outcome: totalOutcome,
-        total: totalTotal,
+        return accumulator;
       },
-    };
-    return teste;
+      {
+        income: 0,
+        outcome: 0,
+        total: 0,
+      },
+    );
+
+    const total = income - outcome;
+
+    return { income, outcome, total };
   }
 
-  public create({ title, value, type }: TransactionDTO): Transaction {
-    const { transactions } = this;
+  public create({ title, value, type }: CreateTransactionDTO): Transaction {
     const transaction = new Transaction({
       title,
       value,
       type,
     });
-
-    function getTotalIncome(total, item) {
-      return total + (item.type === 'income' ? item.value : null);
-    }
-    const totalIncome = this.transactions.reduce(getTotalIncome, 0);
-
-    if (type === 'outcome' && value > totalIncome) {
-      console.log('ultrapassou');
-      return err;
-    }
 
     this.transactions.push(transaction);
 
